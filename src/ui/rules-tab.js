@@ -324,12 +324,15 @@ function rulePane(preset, draft, api, host, { saved, otherIds }, move) {
                 }
                 : null,
         ));
-        const mode = draft.conditions.length > 1
-            ? formRow('Match', segmented(CONDITION_MODE_OPTIONS, draft.conditionMode, value => {
+        let mode = null;
+        if (draft.conditions.length > 1) {
+            const picker = segmented(CONDITION_MODE_OPTIONS, draft.conditionMode, value => {
                 draft.conditionMode = value;
                 touch();
-            }))
-            : null;
+            });
+            picker.classList.add('jeved-condition-mode');
+            mode = formRow('Match', picker);
+        }
         conditions.replaceChildren(...rows, mode);
     };
 

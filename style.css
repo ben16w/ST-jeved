@@ -214,6 +214,10 @@
     overflow: hidden;
 }
 
+.jeved-condition-mode {
+    align-self: flex-start;
+}
+
 .jeved-segment {
     background: none;
     border: 0;
