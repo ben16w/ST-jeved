@@ -20,6 +20,10 @@ const PREVIEW_TURNS = 50;
 const PREVIEW_DELAY = 250;
 
 const ACTION_OPTIONS = ACTIONS.map(action => ({ value: action.id, label: action.label }));
+const CONDITION_MODE_OPTIONS = [
+    { value: 'and', label: 'All conditions' },
+    { value: 'or', label: 'Any condition' },
+];
 
 function offerable(preset, plainOnly) {
     return preset.sensors.filter(sensor => !plainOnly || !repeatOf(sensor));
@@ -308,7 +312,7 @@ function rulePane(preset, draft, api, host, { saved, otherIds }, move) {
     };
 
     const drawConditions = () => {
-        conditions.replaceChildren(...draft.conditions.map((condition, position) => conditionRow(
+        const rows = draft.conditions.map((condition, position) => conditionRow(
             preset,
             condition,
             touch,
@@ -319,7 +323,14 @@ function rulePane(preset, draft, api, host, { saved, otherIds }, move) {
                     touch();
                 }
                 : null,
-        )));
+        ));
+        const mode = draft.conditions.length > 1
+            ? formRow('Match', segmented(CONDITION_MODE_OPTIONS, draft.conditionMode, value => {
+                draft.conditionMode = value;
+                touch();
+            }))
+            : null;
+        conditions.replaceChildren(...rows, mode);
     };
 
     const drawTrigger = () => {

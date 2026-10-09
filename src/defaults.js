@@ -29,6 +29,7 @@ export function blankRule(id, sensor) {
         enabled: false,
         action: DEFAULT_ACTION,
         conditions: [seedCondition(sensor)],
+        conditionMode: 'and',
         need: 3,
         window: 4,
         skipWhen: null,

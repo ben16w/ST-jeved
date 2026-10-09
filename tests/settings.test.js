@@ -56,6 +56,14 @@ describe('normaliseSettings', () => {
         assert.equal(sensor.watch, false);
         assert.deepEqual([sensor.user, sensor.assistant, sensor.context], [1, 1, 'none']);
         assert.equal(settings.presets.a.rules[0].script, '');
+        assert.equal(settings.presets.a.rules[0].conditionMode, 'and');
+    });
+
+    it('keeps the or condition mode and resets an unknown one to and', () => {
+        const settings = normaliseSettings({
+            presets: { a: preset({ rules: [{ id: 'or', conditionMode: 'or' }, { id: 'unknown', conditionMode: 'either' }] }) },
+        });
+        assert.deepEqual(settings.presets.a.rules.map(rule => rule.conditionMode), ['or', 'and']);
     });
 
     it('turns off a rule whose action this Jeved does not know, and keeps its data', () => {

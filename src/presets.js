@@ -411,6 +411,9 @@ export function validatePreset(data, { parse = null } = {}) {
         if (!Array.isArray(rule.conditions) || !rule.conditions.length) {
             problems.push(`${named}: it has no conditions`);
         } else {
+            if (rule.conditionMode !== undefined && rule.conditionMode !== 'and' && rule.conditionMode !== 'or') {
+                problems.push(`${named}: the condition mode must be 'and' or 'or'`);
+            }
             rule.conditions.forEach((condition, position) => {
                 checkCondition(condition, `${named}, condition ${position + 1}`, known, problems);
             });

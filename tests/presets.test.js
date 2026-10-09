@@ -142,6 +142,13 @@ describe('validatePreset', () => {
         assert.deepEqual(validatePreset(preset({ rules: [rule({ directive: '', script: '/echo hello' })] }), { parse }), []);
     });
 
+    it('refuses an unknown condition mode', () => {
+        assert.deepEqual(
+            validatePreset(preset({ rules: [rule({ conditionMode: 'either' })] })),
+            ["rule 'flat': the condition mode must be 'and' or 'or'"],
+        );
+    });
+
     it('asks a score sensor for 2 to 10 descriptions', () => {
         assert.deepEqual(validatePreset(preset({ sensors: [sensor({ levels: ['a'] })] })), ["sensor 'tone': it needs 2 to 10 score descriptions"]);
         assert.deepEqual(
