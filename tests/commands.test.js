@@ -354,7 +354,7 @@ describe('/jeved-ask', () => {
         assert.match(toasts.at(-1)[1], /The type must be score, choice, noul\./);
 
         assert.equal(await ask({ user: 0, assistant: 0 }, 'Anything?'), '');
-        assert.deepEqual(toasts.at(-1), ['error', 'Pick at least one message.']);
+        assert.deepEqual(toasts.at(-1), ['error', 'Pick at least one message or context.']);
         assert.deepEqual(sent, []);
     });
 

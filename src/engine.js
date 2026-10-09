@@ -1,5 +1,5 @@
 import { afterReply, interceptGeneration, waitsForScripts } from './engine/decide.js';
-import { cancelWork, liveTarget, measure, measureMessage, saver } from './engine/measure.js';
+import { cancelWork, liveTarget, measure, measureMessage, measureStart, saver } from './engine/measure.js';
 import { forgetSession, invalidateMeasured, isActive, isRerolling, notify, setError, setPaused as writePaused } from './engine/status.js';
 import { forgetWorldInfo, holdWorldInfo } from './instructions.js';
 import { EDIT_DELAY_MS } from './limits.js';
@@ -73,6 +73,10 @@ export function onMessageEdited(messageId) {
 export function initEngine() {
     const context = SillyTavern.getContext();
     saver();
+    measureStart()?.catch(error => {
+        setError(error);
+        notify();
+    });
     globalThis.jeved_interceptGeneration = interceptGeneration;
     for (const name of RELOAD_EVENTS) {
         const event = context.eventTypes?.[name];
@@ -133,12 +137,16 @@ export function onChatChanged() {
     invalidateMeasured();
     forgetSession();
     forgetWorldInfo();
+    measureStart()?.catch(error => {
+        setError(error);
+        notify();
+    });
     notify();
 }
 
 export { evaluationContext, historiesFor, interceptGeneration, rerollOutcome } from './engine/decide.js';
 export {
-    askOnce, cancelRescan, clearChatScores, isRescanning, nextMessageGroups, nextReplyGroups, planMeasurement,
+    askOnce, cancelRescan, clearChatScores, isRescanning, measureStart, nextMessageGroups, nextReplyGroups, planMeasurement,
     plannedCalls, saveChatSoon, settleContextPrompts, targetAt, testConnection, testEntries, testIndices, testSensor,
 } from './engine/measure.js';
 export { rescan } from './engine/rescan.js';

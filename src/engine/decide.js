@@ -16,8 +16,8 @@ import {
 import { toast } from '../toast.js';
 import { hashText, raceTimeout } from '../util.js';
 import {
-    FAILED, MEASURED, PARTIAL, locate, measure, messageTarget, missingMessageIds, pendingMeasurement, saveChatSoon,
-    waitForPending,
+    FAILED, MEASURED, PARTIAL, locate, measure, measureStart, messageTarget, missingMessageIds, pendingMeasurement,
+    saveChatSoon, waitForPending,
 } from './measure.js';
 import { runScript } from './scripts.js';
 import {
@@ -139,7 +139,7 @@ export async function interceptGeneration(chat, _contextSize, _abort, type) {
             return;
         }
         if (needsDecision(getRecord(message), message, context.chat, index)) {
-            await Promise.all([waitForPending(MAX_PENDING_WAIT), prePass(index)]);
+            await Promise.all([waitForPending(MAX_PENDING_WAIT), prePass(index), measureStart()]);
             if (!isActive() || SillyTavern.getContext().chat[index] !== message) {
                 return;
             }

@@ -50,7 +50,7 @@ const { setRerolling } = await import('../src/engine/status.js');
 const { buildContext } = await import('../src/instructions.js');
 const { listResolver, manualChange } = await import('../src/lists.js');
 const { getSettings, initSettings } = await import('../src/settings.js');
-const { addFired, fired, getHistory, getRecord, getScores, writeDecision, writeScores } = await import('../src/store.js');
+const { addFired, fired, getHistory, getRecord, getScores, getStartScores, writeDecision, writeScores } = await import('../src/store.js');
 const { hashText } = await import('../src/util.js');
 
 let gate = null;
@@ -196,6 +196,35 @@ describe('work is bound to the chat it started in', () => {
         assert.equal(getScores(second[1]), null);
         assert.equal(getScores(second[3]), null);
         assert.ok(seen.every(call => call.chatId === 'c'), JSON.stringify(seen));
+    });
+});
+
+describe('a context-only sensor', () => {
+    it('measures once at chat start and applies its answer to every turn', async () => {
+        const preset = getSettings().presets.Director;
+        preset.sensors = [{
+            id: 'setting', label: 'Setting', watch: false, type: 'score', user: 0, assistant: 0, context: 'all',
+            contextPieces: [], question: 'How dangerous is `context`?', levels: ['a', 'b', 'c', 'd', 'e'], options: [],
+        }];
+        preset.rules = [{
+            id: 'setting_rule', label: 'Setting rule', enabled: true, action: 'nudge',
+            conditions: [{ sensor: 'setting', op: 'below', value: 2 }],
+            need: 1, window: 1, skipWhen: null, cooldown: 0, directive: '(OOC: stay alert.)', script: '',
+        }];
+        setChat('a', [user('u0')]);
+
+        await interceptGeneration(context.chat, 0, null, 'normal');
+
+        assert.equal(seen.length, 1);
+        assert.deepEqual(Object.keys(seen[0].state), ['context']);
+        assert.equal(getStartScores().scores.setting, 1);
+        assert.deepEqual(fired(context.chat[0]).map(entry => entry.rule), ['setting_rule']);
+
+        context.chat.push(narrator('c0'), user('u1'));
+        await interceptGeneration(context.chat, 0, null, 'normal');
+
+        assert.equal(seen.length, 1);
+        assert.deepEqual(fired(context.chat[2]).map(entry => entry.rule), ['setting_rule']);
     });
 });
 

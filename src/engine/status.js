@@ -1,6 +1,6 @@
 import { errorKind } from '../classifier.js';
 import { listResolver } from '../lists.js';
-import { measuredSensors, missingIds, momentOf, sensorSignature } from '../sensors.js';
+import { START_MOMENT, measuredSensors, missingIds, momentOf, sensorSignature } from '../sensors.js';
 import { getPreset, getSettings, schemaProblem } from '../settings.js';
 import { MESSAGE_MOMENT, REPLY_MOMENT, getScores, isNarrator, isUser } from '../store.js';
 

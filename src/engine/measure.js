@@ -7,12 +7,12 @@ import { hasLegacyPrompts, settleLegacyPrompts } from '../presets.js';
 import { macroText, repeatOf, typeOf } from '../sensor-types.js';
 import {
     askedIdsOf, buildRequest, foldAnswers, groupSensors, groupSpec, hasInput, measuredSensors, missingIds, momentOf,
-    NO_INPUT, requestKey, sensorSignature,
+    NO_INPUT, requestKey, sensorSignature, START_MOMENT,
 } from '../sensors.js';
 import { getPreset, getSettings, saveSettings } from '../settings.js';
 import {
-    MESSAGE_MOMENT, REPLY_MOMENT, clearScores, getRecord, getScores, isNarrator, isUser, narratorIndices, userIndices,
-    writeScores,
+    MESSAGE_MOMENT, REPLY_MOMENT, clearScores, clearStartScores, getRecord, getScores, getStartScores, isNarrator,
+    isUser, narratorIndices, userIndices, writeScores, writeStartScores,
 } from '../store.js';
 import { hashText, raceTimeout } from '../util.js';
 import {
@@ -180,6 +180,57 @@ function groupsFor(preset, moment, pick = null) {
 
 function momentSensors(preset, moment) {
     return measuredSensors(preset).filter(sensor => momentOf(sensor) === moment);
+}
+
+function startGroups(preset, only = null) {
+    return groupsFor(preset, START_MOMENT, only && (id => only.has(id)));
+}
+
+const startTasks = new Map();
+
+export function measureStart() {
+    const chatId = SillyTavern.getContext().getCurrentChatId();
+    if (startTasks.has(chatId)) {
+        return startTasks.get(chatId);
+    }
+    const preset = getPreset();
+    const wanted = momentSensors(preset, START_MOMENT);
+    const missing = new Set(missingIds(wanted, getStartScores()?.scores, listResolver(preset)));
+    const groups = startGroups(preset, missing);
+    if (!groups.length) {
+        return null;
+    }
+    const task = (async () => {
+        const settings = getSettings();
+        const build = await preparedRequests(settings, groups);
+        const requests = groups.map(group => build(0, group));
+        const results = await Promise.allSettled(requests.map(request => call(request)));
+        let stored = false;
+        for (const [position, result] of results.entries()) {
+            if (result.status === 'rejected') {
+                if (!isCancelled(result.reason)) {
+                    setError(result.reason);
+                }
+                continue;
+            }
+            if (SillyTavern.getContext().getCurrentChatId() === chatId) {
+                const answers = foldAnswers(result.value, requests[position].plan);
+                writeStartScores(answers.scores, answers.confidence);
+                stored = true;
+            }
+        }
+        if (stored) {
+            invalidateMeasured();
+            markPreset();
+            notify();
+        }
+    })().finally(() => {
+        if (startTasks.get(chatId) === task) {
+            startTasks.delete(chatId);
+        }
+    });
+    startTasks.set(chatId, task);
+    return task;
 }
 
 export function missingMessageIds(preset, message) {
@@ -518,7 +569,7 @@ export function plannedCalls(all = false) {
 export function clearChatScores() {
     const context = SillyTavern.getContext();
     cancelWork();
-    const cleared = clearScores(context.chat);
+    const cleared = clearScores(context.chat) + Number(clearStartScores());
     invalidateMeasured();
     if (cleared) {
         markPreset();

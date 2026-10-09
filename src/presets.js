@@ -1,5 +1,5 @@
 import { actionIds, isKnownAction, ruleAction } from './actions.js';
-import { ALL_CONTEXT, CUSTOM_CONTEXT, NO_CONTEXT, isPromptKey } from './context-groups.js';
+import { ALL_CONTEXT, CUSTOM_CONTEXT, NO_CONTEXT, isPromptKey, sendsContext } from './context-groups.js';
 import { blankRule, blankSensor } from './defaults.js';
 import { MESSAGES, SCHEMA_VERSION } from './limits.js';
 import { normaliseEntries } from './lists.js';
@@ -366,7 +366,7 @@ export function validatePreset(data, { parse = null } = {}) {
                 problems.push(`${named}: ${words} must be a whole number from ${MESSAGES.min} to ${MESSAGES.max}`);
             }
         }
-        if (!hasInput(sensor)) {
+        if (!hasInput(sensor) && !sendsContext(sensor)) {
             problems.push(`${named}: ${NO_INPUT}`);
         }
         if (!String(sensor.label ?? '').trim()) {

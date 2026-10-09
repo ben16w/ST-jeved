@@ -69,7 +69,7 @@ describe('words for one value', () => {
     it('says when a sensor runs, and asks for a message when it reads none', () => {
         assert.equal(momentLine({ user: 1, assistant: 1 }), 'Runs after each reply.');
         assert.equal(momentLine({ user: 1, assistant: 0 }), 'Runs before the reply, on your message.');
-        assert.equal(momentLine({ user: 0, assistant: 0 }), 'Pick at least one message.');
+        assert.equal(momentLine({ user: 0, assistant: 0 }), 'Pick at least one message or context.');
     });
 
     it('names only the keys the current settings produce', () => {

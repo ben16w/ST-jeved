@@ -79,11 +79,19 @@ describe('which sensors are measured', () => {
         assert.deepEqual(ids(preset), ['tension', 'speaks', 'repeats', 'tone', 'scene', 'attention', 'house']);
     });
 
-    it('leaves out a sensor that reads no message at all', () => {
+    it('leaves out a sensor that reads neither a message nor context', () => {
         assert.equal(hasInput(sensor({ user: 0, assistant: 0 })), false);
         assert.deepEqual(ids(presetOf(sensor({ user: 0, assistant: 0 }))), []);
         assert.deepEqual(ids(presetOf(sensor({ user: 0, assistant: 1 }))), ['a']);
         assert.deepEqual(ids(presetOf(sensor({ user: 1, assistant: 0 }))), ['a']);
+    });
+
+    it('keeps a context-only sensor for one start-of-chat call', () => {
+        const contextOnly = sensor({ user: 0, assistant: 0, context: 'all' });
+        assert.deepEqual(ids(presetOf(contextOnly)), ['a']);
+        assert.equal(momentOf(contextOnly), 'start');
+        assert.deepEqual(keys(groupSensors(presetOf(contextOnly), { moment: 'start' })), [['a']]);
+        assert.deepEqual(groupSensors(presetOf(contextOnly), { moment: 'message' }), []);
     });
 
     it('needs two options before it asks a choice sensor, and asks a yes or no sensor with none', () => {
@@ -108,12 +116,14 @@ describe('when a sensor runs', () => {
             sensor({ id: 'scene', user: 1, assistant: 0 }),
             sensor({ id: 'mood', user: 1, assistant: 0 }),
             sensor({ id: 'tone', user: 0, assistant: 1 }),
+            sensor({ id: 'setting', user: 0, assistant: 0, context: 'all' }),
         ];
         const rule = (...used) => ({ conditions: used.map(id => ({ sensor: id, op: 'below', value: 1 })) });
         assert.equal(momentOfRule(rule('scene'), sensors), 'message');
         assert.equal(momentOfRule(rule('scene', 'mood'), sensors), 'message');
         assert.equal(momentOfRule(rule('scene', 'tone'), sensors), 'reply');
         assert.equal(momentOfRule(rule('tone'), sensors), 'reply');
+        assert.equal(momentOfRule(rule('setting'), sensors), 'message');
     });
 
     it('counts the exception sensor and an unknown sensor as a reply sensor', () => {

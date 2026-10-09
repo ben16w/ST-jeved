@@ -341,7 +341,7 @@ describe('the sensor editor for each type', () => {
         assert.equal(hintWithId('jeved_sensor_hint').textContent, 'Refer to your message as `player_message`.');
     });
 
-    it('asks for at least one message once both sliders reach zero', async () => {
+    it('asks for a message or context once both sliders reach zero', async () => {
         setup();
         const tab = await openSensor();
         for (const id of ['jeved_sensor_user', 'jeved_sensor_assistant']) {
@@ -350,9 +350,9 @@ describe('the sensor editor for each type', () => {
             bar.fire('input');
         }
         const runs = tab.element.querySelectorAll('.jeved-hint').find(item => item.id === 'jeved_sensor_runs');
-        assert.equal(runs.textContent, 'Pick at least one message.');
+        assert.equal(runs.textContent, 'Pick at least one message or context.');
         await save(tab);
-        assert.match(problemText(tab), /Pick at least one message/);
+        assert.match(problemText(tab), /Pick at least one message or context/);
     });
 
     it('drops the old scale hint from every type', async () => {

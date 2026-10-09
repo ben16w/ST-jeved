@@ -257,9 +257,10 @@ describe('validatePreset', () => {
         assert.ok(validatePreset(preset({ rules: [rule({ action: 'shout' })] })).includes(`rule 'flat': the action must be ${ACTION_WORDS}`));
     });
 
-    it('asks a sensor to read at least one message', () => {
-        const idle = preset({ sensors: [sensor({ user: 0, assistant: 0 })], rules: [] });
-        assert.deepEqual(validatePreset(idle), ["sensor 'tone': Pick at least one message."]);
+    it('asks a sensor to read at least one message or context', () => {
+        const idle = preset({ sensors: [sensor({ user: 0, assistant: 0, context: 'none' })], rules: [] });
+        assert.deepEqual(validatePreset(idle), ["sensor 'tone': Pick at least one message or context."]);
+        assert.deepEqual(validatePreset(preset({ sensors: [sensor({ user: 0, assistant: 0, context: 'all' })], rules: [] })), []);
     });
 
     it('asks a reroll rule for a sensor that reads an assistant message', () => {

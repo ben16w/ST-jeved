@@ -27,6 +27,7 @@ function ensureExtra(message) {
 }
 
 const LISTS_KEY = 'jeved_lists';
+const START_SCORES_KEY = 'jeved_start_scores';
 
 export function getRecord(message) {
     const record = message?.extra?.[KEY];
@@ -99,6 +100,37 @@ export function writeScores(message, scores, hash = hashText(message.mes), confi
     return extra[KEY];
 }
 
+export function getStartScores() {
+    const context = globalThis.SillyTavern?.getContext?.();
+    const record = context?.chatMetadata?.[START_SCORES_KEY];
+    return record && typeof record === 'object' ? record : null;
+}
+
+export function writeStartScores(scores, confidence = {}) {
+    const context = SillyTavern.getContext();
+    if (!context.chatMetadata) {
+        return null;
+    }
+    const current = getStartScores() ?? {};
+    context.chatMetadata[START_SCORES_KEY] = {
+        ...current,
+        scores: { ...(current.scores ?? {}), ...scores },
+        confidence: { ...(current.confidence ?? {}), ...confidence },
+    };
+    context.saveMetadataDebounced();
+    return context.chatMetadata[START_SCORES_KEY];
+}
+
+export function clearStartScores() {
+    const context = SillyTavern.getContext();
+    if (!context.chatMetadata?.[START_SCORES_KEY]) {
+        return false;
+    }
+    delete context.chatMetadata[START_SCORES_KEY];
+    context.saveMetadataDebounced();
+    return true;
+}
+
 function foundIndices(chat, matches, from, limit) {
     const found = [];
     for (let i = Math.min(from, chat.length) - 1; i >= 0 && found.length < limit; i--) {
@@ -148,8 +180,7 @@ function confidenceOf(level) {
     return Object.keys(kept).length ? kept : null;
 }
 
-function answersOf(message, byId) {
-    const record = getScores(message);
+function answersIn(record, byId) {
     if (!record || !isRecord(record.scores)) {
         return null;
     }
@@ -166,6 +197,10 @@ function answersOf(message, byId) {
         }
     }
     return { values, confidence };
+}
+
+function answersOf(message, byId) {
+    return answersIn(getScores(message), byId);
 }
 
 export function latestScores(chat, ids, before = chat.length, sensors = []) {
@@ -187,21 +222,22 @@ export function latestScores(chat, ids, before = chat.length, sensors = []) {
     return values;
 }
 
-function entryOf({ index, replies, decides, own, shared }) {
+function entryOf({ index, replies, decides, start, own, shared }) {
     const base = { index, replies, decides };
-    if (!own && !shared) {
+    if (!start && !own && !shared) {
         return { ...base, scores: null, confidence: {} };
     }
     return {
         ...base,
-        scores: { ...(shared?.values ?? {}), ...(own?.values ?? {}) },
-        confidence: { ...(shared?.confidence ?? {}), ...(own?.confidence ?? {}) },
+        scores: { ...(start?.values ?? {}), ...(shared?.values ?? {}), ...(own?.values ?? {}) },
+        confidence: { ...(start?.confidence ?? {}), ...(shared?.confidence ?? {}), ...(own?.confidence ?? {}) },
     };
 }
 
 export function getHistory(chat, count, moment = REPLY_MOMENT, sensors = []) {
     const reply = moment === REPLY_MOMENT;
     const byId = sensorMap(sensors);
+    const start = answersIn(getStartScores(), byId);
     const found = [];
     const awaiting = [];
     let replies = narratorIndices(chat).length;
@@ -228,6 +264,7 @@ export function getHistory(chat, count, moment = REPLY_MOMENT, sensors = []) {
                 index,
                 replies,
                 decides: !reply || !followsReply,
+                start,
                 own: answersOf(message, byId),
                 shared: null,
             };

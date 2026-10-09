@@ -2,7 +2,7 @@ import { AFTER_REPLY, DEFAULT_ACTION, replacesReply, ruleAction } from './action
 import { entryKey } from './lists.js';
 import { conditionHolds, missingSensors, ruleList, scoreOf } from './rules.js';
 import { conditionText, entryValue, repeatOf, sensorLabel, typeOf, valueText } from './sensor-types.js';
-import { NO_INPUT, hasInput, labelsFor, latestWords, momentCount, momentOf, momentOfRule, windowWords } from './sensors.js';
+import { NO_INPUT, START_MOMENT, hasInput, labelsFor, latestWords, momentCount, momentOf, momentOfRule, windowWords } from './sensors.js';
 import { MESSAGE_MOMENT, REPLY_MOMENT, firedFor, isNarrator, lastUserIndex } from './store.js';
 
 const LABEL_WORDS = {
@@ -26,8 +26,11 @@ export function ruleMomentNote(moment, phase) {
 }
 
 export function momentLine(sensor) {
-    if (!hasInput(sensor)) {
+    if (!hasInput(sensor) && !labelsFor(sensor).includes('context')) {
         return NO_INPUT;
+    }
+    if (momentOf(sensor) === START_MOMENT) {
+        return 'Runs once when you open the chat.';
     }
     return momentOf(sensor) === MESSAGE_MOMENT ? 'Runs before the reply, on your message.' : 'Runs after each reply.';
 }

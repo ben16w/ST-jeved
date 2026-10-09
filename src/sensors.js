@@ -6,7 +6,8 @@ import { entryValue, findSensor, hasValue, repeatOf, typeOf } from './sensor-typ
 import { MESSAGE_MOMENT, REPLY_MOMENT, isNarrator, narratorIndices, userIndices } from './store.js';
 import { clamp } from './util.js';
 
-export const NO_INPUT = 'Pick at least one message.';
+export const NO_INPUT = 'Pick at least one message or context.';
+export const START_MOMENT = 'start';
 
 export function needsReplyProblem(noun) {
     return `A ${noun} rule needs a sensor that reads an assistant message.`;
@@ -56,7 +57,14 @@ export function hasInput(sensor) {
     return userCount(sensor) + assistantCount(sensor) > 0;
 }
 
+export function runsAtStart(sensor) {
+    return !hasInput(sensor) && sendsContext(sensor);
+}
+
 export function momentOf(sensor) {
+    if (runsAtStart(sensor)) {
+        return START_MOMENT;
+    }
     return assistantCount(sensor) === 0 ? MESSAGE_MOMENT : REPLY_MOMENT;
 }
 
@@ -68,7 +76,7 @@ function ruleSensorIds(rule) {
 
 export function momentOfRule(rule, sensors = []) {
     const used = ruleSensorIds(rule);
-    return used.length && used.every(id => momentOf(findSensor(sensors, id)) === MESSAGE_MOMENT)
+    return used.length && used.every(id => momentOf(findSensor(sensors, id)) !== REPLY_MOMENT)
         ? MESSAGE_MOMENT
         : REPLY_MOMENT;
 }
@@ -130,7 +138,7 @@ function usable(sensor) {
     return !!sensor
         && !!String(sensor.id ?? '').trim()
         && !!String(sensor.question ?? '').trim()
-        && hasInput(sensor)
+    && (hasInput(sensor) || runsAtStart(sensor))
         && typeOf(sensor).usable(sensor);
 }
 
