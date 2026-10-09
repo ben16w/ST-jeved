@@ -333,7 +333,7 @@ function rulePane(preset, draft, api, host, { saved, otherIds }, move) {
             picker.classList.add('jeved-condition-mode');
             mode = formRow('Match', picker);
         }
-        conditions.replaceChildren(...rows, mode);
+        conditions.replaceChildren(...rows, ...(mode ? [mode] : []));
     };
 
     const drawTrigger = () => {

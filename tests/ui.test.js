@@ -868,6 +868,14 @@ describe('the rule form for each action', () => {
         assert.equal(getPreset().rules[0].conditionMode, 'or');
     });
 
+    it('shows no condition mode or placeholder when a rule has one condition', async () => {
+        setup([usingCalm()]);
+        const tab = await openRule();
+        const conditions = tab.element.querySelector('.jeved-conditions');
+        assert.equal(conditions.textContent.includes('null'), false);
+        assert.equal(conditions.querySelector('.jeved-condition-mode'), null);
+    });
+
     it('names the list a repeating rule checks, and says when it is empty', async () => {
         const settings = setup([usingCalm()]);
         settings.presets.Test.lists = [{ name: 'house_rules', entries: [] }];
