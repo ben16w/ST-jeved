@@ -854,6 +854,28 @@ describe('the rule form for each action', () => {
         assert.ok(hints().some(line => line.startsWith('If the latest reply matches this')));
     });
 
+    it('lets a rule choose whether all or any conditions match', async () => {
+        const rule = usingCalm();
+        rule.conditions.push({ sensor: 'tone', op: 'below', value: 2, minConfidence: null });
+        setup([rule]);
+        const tab = await openRule();
+        const choices = tab.element.querySelectorAll('.jeved-segment').filter(item => ['and', 'or'].includes(item.dataset.jevedValue));
+        assert.deepEqual(choices.map(item => item.dataset.jevedValue), ['and', 'or']);
+
+        choices.find(item => item.dataset.jevedValue === 'or').fire('click');
+        buttonNamed(tab.element, 'Save').fire('click');
+        await settle();
+        assert.equal(getPreset().rules[0].conditionMode, 'or');
+    });
+
+    it('shows no condition mode or placeholder when a rule has one condition', async () => {
+        setup([usingCalm()]);
+        const tab = await openRule();
+        const conditions = tab.element.querySelector('.jeved-conditions');
+        assert.equal(conditions.textContent.includes('null'), false);
+        assert.equal(conditions.querySelector('.jeved-condition-mode'), null);
+    });
+
     it('names the list a repeating rule checks, and says when it is empty', async () => {
         const settings = setup([usingCalm()]);
         settings.presets.Test.lists = [{ name: 'house_rules', entries: [] }];

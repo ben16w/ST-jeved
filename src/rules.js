@@ -44,8 +44,9 @@ export function conditionHolds(entry, condition, key = '') {
     return false;
 }
 
-function entryMatches(entry, conditions, repeating = null, key = '') {
-    return conditions.every(condition => conditionHolds(entry, condition, repeating?.has(condition.sensor) ? key : ''));
+function entryMatches(entry, conditions, conditionMode = 'and', repeating = null, key = '') {
+    const matches = condition => conditionHolds(entry, condition, repeating?.has(condition.sensor) ? key : '');
+    return conditionMode === 'or' ? conditions.some(matches) : conditions.every(matches);
 }
 
 export function ruleList(rule, sensors = []) {
@@ -82,7 +83,7 @@ export function matchingCount(history = [], rule = null, { sensors = [], listEnt
     }
     const window = Math.max(1, Number(rule.window) || 1);
     const repeating = repeatingFor(rule, sensors, listEntries);
-    return bestCount(history.slice(-window), repeating, (entry, key) => entryMatches(entry, conditions, repeating?.ids, key));
+    return bestCount(history.slice(-window), repeating, (entry, key) => entryMatches(entry, conditions, rule?.conditionMode, repeating?.ids, key));
 }
 
 export function missingSensors(rule, sensorIds) {
@@ -97,9 +98,10 @@ export function missingSensors(rule, sensorIds) {
 const opWords = op => opOf(op)?.words ?? String(op ?? '');
 
 function describe(rule, sensors, slice, count, entries = []) {
+    const conditionMode = rule.conditionMode === 'or' ? 'or' : 'and';
     const conditions = rule.conditions
         .map(condition => `${condition.sensor} ${opWords(condition.op)} ${valueText(findSensor(sensors, condition.sensor), condition.value, String(condition.value ?? ''))}`)
-        .join(' and ');
+        .join(` ${conditionMode} `);
     const first = rule.conditions[0].sensor;
     const sensor = findSensor(sensors, first);
     const key = entries.length && isRepeating(sensor) ? entryKey(entries[0]) : '';
@@ -142,13 +144,13 @@ export function evaluate({
         const matched = [];
         let count = 0;
         if (!repeating) {
-            count = slice.filter(entry => entryMatches(entry, rule.conditions)).length;
+            count = slice.filter(entry => entryMatches(entry, rule.conditions, rule.conditionMode)).length;
             if (count < rule.need) {
                 continue;
             }
         } else {
             for (const one of repeating.entries) {
-                const found = slice.filter(entry => entryMatches(entry, rule.conditions, repeating.ids, entryKey(one))).length;
+                const found = slice.filter(entry => entryMatches(entry, rule.conditions, rule.conditionMode, repeating.ids, entryKey(one))).length;
                 if (found >= rule.need) {
                     matched.push(one);
                     count = Math.max(count, found);
@@ -257,7 +259,8 @@ export function explain(rule, {
     const slice = history.slice(-rule.window);
     const latest = slice.length ? slice[slice.length - 1] : null;
     const measured = bestCount(slice, repeating, (entry, key) => rule.conditions
-        .every(condition => scoreOf(entry, condition?.sensor, repeating?.ids.has(condition?.sensor) ? key : '') !== null));
+        .filter(condition => rule.conditionMode === 'or' || scoreOf(entry, condition?.sensor, repeating?.ids.has(condition?.sensor) ? key : '') !== null)
+        .length === (rule.conditionMode === 'or' ? 1 : rule.conditions.length));
     if (measured < rule.need) {
         const short = moreWords(moment, rule.need - measured);
         return { kind: 'idle', text: `Needs ${short}`, detail: `Jeved needs an answer on ${short} before this rule can match.` };

@@ -80,6 +80,17 @@ describe('evaluate', () => {
         assert.deepEqual(firedIds(run(matching, [both])), ['flat']);
     });
 
+    it('matches when any condition holds when the condition mode is or', () => {
+        const either = rule({ need: 2, window: 2, conditionMode: 'or', conditions: [
+            { sensor: 'change', op: 'below', value: 2.5 },
+            { sensor: 'tension', op: 'below', value: 1.5 },
+        ] });
+        const matching = [reply({ change: 1, tension: 3 }), reply({ change: 3, tension: 1 })];
+        const neither = [reply({ change: 3, tension: 3 }), reply({ change: 3, tension: 3 })];
+        assert.deepEqual(firedIds(run(matching, [either])), ['flat']);
+        assert.deepEqual(run(neither, [either]), []);
+    });
+
     it('compares with above as well as below', () => {
         const high = rule({ need: 1, window: 1, conditions: [{ sensor: 'tension', op: 'above', value: 2.5 }] });
         assert.deepEqual(firedIds(run([reply({ tension: 3 })], [high])), ['flat']);

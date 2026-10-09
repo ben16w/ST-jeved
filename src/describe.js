@@ -205,7 +205,8 @@ export function ruleSummary(rule, sensors = []) {
     const moment = momentOfRule(rule, sensors);
     const list = ruleList(rule, sensors);
     const each = list ? `For each entry of ${list}: when ` : 'When ';
-    const when = conditions.map(condition => conditionText(condition, sensors)).join(' and ');
+    const conditionMode = rule.conditionMode === 'or' ? 'or' : 'and';
+    const when = conditions.map(condition => conditionText(condition, sensors)).join(` ${conditionMode} `);
     const unless = rule.skipWhen?.sensor
         ? `, except when ${conditionText(rule.skipWhen, sensors)} on ${latestWords(moment)}`
         : '';

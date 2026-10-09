@@ -74,6 +74,7 @@ export function normalisePreset(preset) {
         rule.action = String(rule.action ?? DEFAULT_ACTION);
         rule.enabled = !!rule.enabled && isKnownAction(rule.action);
         rule.conditions = (Array.isArray(rule.conditions) ? rule.conditions : []).filter(isRecord);
+        rule.conditionMode = rule.conditionMode === 'or' ? 'or' : 'and';
         rule.window = clamp(rule.window, RULE_COUNTS);
         rule.need = Math.min(clamp(rule.need, RULE_COUNTS), rule.window);
         rule.cooldown = clamp(rule.cooldown, RULE_COOLDOWN);
